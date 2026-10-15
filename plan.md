@@ -217,11 +217,11 @@ noisebuilder version
 
 Needs libtex native build first (libtex PLAN.md: SSE4.1 + scalar vec.h, gcc / clang / MSVC platform.h).
 
-- [ ] ext/libtex git submodule (github.com/C0deDr4gon/libtex). One C unit `src/io/libtex.c` (LIBTEX_IMPLEMENTATION), build.sh / build.bat compile it as C.
-- [ ] readTga via tex_tga_info / tex_tga_read (all TGA types, RLE, any origin). Keep 2 ch rule (24 bit, B all zero).
+- [x] ext/libtex git submodule (github.com/C0deDr4gon/libtex). One C unit `src/io/libtex.c` (LIBTEX_IMPLEMENTATION), build.sh / build.bat compile it as C.
+- [x] readTga via tex_tga_info / tex_tga_read (all TGA types, RLE, any origin). Keep 2 ch rule (24 bit, B all zero).
 - [x] Bytes like libtex: round(v * 255), read byte / 255. rankValue keeps equal byte counts (image.hpp toByte / fromByte / rankValue).
-- [ ] writeTga via libtex tga writer (floats, libtex rounds the same).
-- [ ] Tests: tga roundtrip same as now.
+- [x] writeTga via libtex tga writer (tex_tga_header + tex_tga_pixels). Files byte same as own writer (vc, coshemi checked).
+- [x] Tests: tga roundtrip same as now.
 
 ---
 

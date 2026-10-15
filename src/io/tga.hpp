@@ -2,7 +2,7 @@
 #include <string>
 #include "image.hpp"
 
-// Own TGA, uncompressed only. No deps.
+// TGA via libtex (ext/libtex). Writes uncompressed.
 // Float value 0..1 -> byte = round(v * 255), clamped (toByte, same as libtex).
 // (value = rankValue and N multiple of 256 -> every byte used equal times.)
 //
@@ -22,7 +22,7 @@ bool writeTgaSlices(const std::string& path, const Image& img, std::string& err)
 // All slices stacked top to bottom in one W x (H*D) file.
 bool writeTgaAtlas(const std::string& path, const Image& img, std::string& err);
 
-// Read own files back (types 2 / 3, 8/24/32 bit, uncompressed, any origin).
+// Read any TGA libtex reads (types 1-3 / 9-11, RLE, any origin). Gray -> 1 ch, 32 bit -> 4 ch.
 // 24-bit with B all zero -> 2 ch. Other 24-bit -> 3 ch. Values = byte / 255 (fromByte).
 bool readTga(const std::string& path, Image& out, std::string& err);
 
