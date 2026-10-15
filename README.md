@@ -2,7 +2,7 @@
 
 CLI tool. Makes blue noise textures for AO, raytracing, shadows, TAA, dithering.
 
-- C++17, no dependencies. Linux + Windows.
+- C++17 + [libtex](https://github.com/C0deDr4gon/libtex) (C, copy in ext/libtex) for TGA. Linux + Windows.
 - CPU only, SIMD (AVX-512 / AVX2 / SSE2 / scalar), threaded.
 - Output: own uncompressed `.tga` (8-bit). Sizes power of two.
 - Tiles seamless (wraps in x, y, and time).
@@ -141,7 +141,7 @@ float3 ray = d.x * T + d.y * B + d.z * N;
 **Sampling notes**
 - Load / point sampling only. Never filter or mip blue noise.
 - Store as linear (UNORM), not sRGB.
-- Values are centered in bins: `(rank + 0.5) / N`.
+- Byte = round(v * 255), read back as byte / 255 (UNORM, same as libtex). Ranks map so every byte is used N / 256 times.
 
 ## Tests
 

@@ -1,62 +1,44 @@
 #include "io/tga.hpp"
-#include <cstdint>
 #include <cstdio>
 #include <vector>
 
+extern "C" {
+#include "../../ext/libtex/libtex.h"
+}
+
 namespace {
 
-uint8_t toByte(float v) {
-    int b = (int)(v * 256.0f);
-    return (uint8_t)(b < 0 ? 0 : b > 255 ? 255 : b);
+void init() {
+    static const bool ready = (tex_init(), true);
+    (void)ready;
 }
 
-void put16(uint8_t* p, int v) {
-    p[0] = (uint8_t)(v & 0xFF);
-    p[1] = (uint8_t)((v >> 8) & 0xFF);
-}
-
-int get16(const uint8_t* p) { return p[0] | (p[1] << 8); }
-
-// Pixel bytes per channel count. 2 ch stored as 24-bit.
-int bytesPerPixel(int c) { return c == 1 ? 1 : c == 4 ? 4 : 3; }
-
-// Write header + rows of slices [z0, z1) stacked.
+// Write header + rows of slices [z0, z1) stacked. 2 ch -> 24 bit, B = 0.
 bool writeRange(const std::string& path, const Image& img, int z0, int z1, std::string& err) {
     if (img.c < 1 || img.c > 4) { err = "tga: channels must be 1..4"; return false; }
     int outH = img.h * (z1 - z0);
     if (img.w > 65535 || outH > 65535) { err = "tga: image too big (max 65535)"; return false; }
+    init();
 
-    int bpp = bytesPerPixel(img.c);
-    uint8_t hdr[18] = {};
-    hdr[2] = img.c == 1 ? 3 : 2;             // 3 = gray, 2 = truecolor
-    put16(hdr + 12, img.w);
-    put16(hdr + 14, outH);
-    hdr[16] = (uint8_t)(bpp * 8);
-    hdr[17] = 0x20 | (img.c == 4 ? 8 : 0);  // top-left origin, alpha bits
+    int n = img.c == 1 ? 1 : img.c == 4 ? 4 : 3;
+    size_t count = (size_t)img.w * outH;
+    std::vector<float> rgba(count * 4, 0.0f);
+    for (int z = z0; z < z1; ++z)
+        for (int y = 0; y < img.h; ++y)
+            for (int x = 0; x < img.w; ++x) {
+                float* p = rgba.data() + (((size_t)(z - z0) * img.h + y) * img.w + x) * 4;
+                for (int c = 0; c < img.c; ++c) p[c] = img.at(x, y, z, c);
+                if (img.c < 4) p[3] = 1.0f;
+            }
 
-    std::vector<uint8_t> row((size_t)img.w * bpp);
+    std::vector<unsigned char> file(18 + count * n), row((size_t)img.w * n);
+    int head = tex_tga_header(img.w, outH, n, 0, file.data());
+    int size = tex_tga_pixels(rgba.data(), img.w, outH, n, 0, file.data() + head, row.data());
+    file.resize((size_t)head + size);
+
     FILE* f = std::fopen(path.c_str(), "wb");
     if (!f) { err = "tga: cannot open " + path; return false; }
-    bool ok = std::fwrite(hdr, 1, 18, f) == 18;
-
-    for (int z = z0; z < z1 && ok; ++z) {
-        for (int y = 0; y < img.h && ok; ++y) {
-            uint8_t* p = row.data();
-            for (int x = 0; x < img.w; ++x) {
-                if (img.c == 1) {
-                    *p++ = toByte(img.at(x, y, z, 0));
-                } else {
-                    // file order is B G R (A)
-                    uint8_t r = toByte(img.at(x, y, z, 0));
-                    uint8_t g = toByte(img.at(x, y, z, 1));
-                    uint8_t b = img.c >= 3 ? toByte(img.at(x, y, z, 2)) : 0;
-                    *p++ = b; *p++ = g; *p++ = r;
-                    if (img.c == 4) *p++ = toByte(img.at(x, y, z, 3));
-                }
-            }
-            ok = std::fwrite(row.data(), 1, row.size(), f) == row.size();
-        }
-    }
+    bool ok = std::fwrite(file.data(), 1, file.size(), f) == file.size();
     ok = (std::fclose(f) == 0) && ok;
     if (!ok) err = "tga: write failed " + path;
     return ok;
@@ -96,47 +78,30 @@ bool writeTgaAtlas(const std::string& path, const Image& img, std::string& err) 
 bool readTga(const std::string& path, Image& out, std::string& err) {
     FILE* f = std::fopen(path.c_str(), "rb");
     if (!f) { err = "tga: cannot open " + path; return false; }
-
-    uint8_t hdr[18];
-    if (std::fread(hdr, 1, 18, f) != 18) { std::fclose(f); err = "tga: short header"; return false; }
-
-    int idLen = hdr[0], cmapType = hdr[1], type = hdr[2];
-    int w = get16(hdr + 12), h = get16(hdr + 14), bits = hdr[16];
-    bool topLeft = (hdr[17] & 0x20) != 0;
-    int bpp = bits / 8;
-
-    bool okType = cmapType == 0 &&
-                  ((type == 3 && bits == 8) || (type == 2 && (bits == 24 || bits == 32)));
-    if (!okType || w == 0 || h == 0) { std::fclose(f); err = "tga: unsupported format"; return false; }
-
-    std::fseek(f, idLen, SEEK_CUR);
-    std::vector<uint8_t> px((size_t)w * h * bpp);
-    bool ok = std::fread(px.data(), 1, px.size(), f) == px.size();
+    std::vector<unsigned char> file;
+    unsigned char buf[65536];
+    for (size_t got; (got = std::fread(buf, 1, sizeof buf, f)) > 0;) file.insert(file.end(), buf, buf + got);
     std::fclose(f);
-    if (!ok) { err = "tga: short pixel data"; return false; }
+    init();
 
-    int c = bpp == 1 ? 1 : bpp == 4 ? 4 : 3;
-    if (bpp == 3) {
+    tex_info info;
+    int len = (int)file.size();
+    if (file.size() > 0x7fffffff || tex_tga_info(file.data(), len, &info) != TEX_OK) { err = "tga: unsupported format"; return false; }
+    std::vector<float> rgba((size_t)info.width * info.height * 4);
+    std::vector<unsigned char> scratch((size_t)info.scratch + 1);
+    if (tex_tga_read(file.data(), len, rgba.data(), scratch.data()) != TEX_OK) { err = "tga: bad pixel data"; return false; }
+
+    int c = (file[2] & 7) == 3 ? 1 : file[16] == 32 ? 4 : 3;
+    if (c == 3) {
         bool blueZero = true;
-        for (size_t i = 0; i < px.size() && blueZero; i += 3) blueZero = px[i] == 0;
+        for (size_t i = 2; i < rgba.size() && blueZero; i += 4) blueZero = rgba[i] == 0.0f;
         if (blueZero) c = 2;
     }
 
-    out = Image(w, h, 1, c);
-    auto val = [](uint8_t b) { return (b + 0.5f) / 256.0f; };
-    for (int y = 0; y < h; ++y) {
-        int fy = topLeft ? y : h - 1 - y;
-        const uint8_t* p = px.data() + (size_t)fy * w * bpp;
-        for (int x = 0; x < w; ++x, p += bpp) {
-            if (bpp == 1) {
-                out.at(x, y, 0, 0) = val(p[0]);
-            } else {
-                out.at(x, y, 0, 0) = val(p[2]);              // R
-                out.at(x, y, 0, 1) = val(p[1]);              // G
-                if (c >= 3) out.at(x, y, 0, 2) = val(p[0]);  // B
-                if (c == 4) out.at(x, y, 0, 3) = val(p[3]);  // A
-            }
-        }
-    }
+    out = Image(info.width, info.height, 1, c);
+    for (int y = 0; y < info.height; ++y)
+        for (int x = 0; x < info.width; ++x)
+            for (int k = 0; k < c; ++k)
+                out.at(x, y, 0, k) = rgba[((size_t)y * info.width + x) * 4 + k];
     return true;
 }

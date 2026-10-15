@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <vector>
 #include "gen/void_cluster.hpp"
+#include "image.hpp"
 #include "rng.hpp"
 #include "simd.hpp"
 #include "thread_pool.hpp"
@@ -262,7 +263,7 @@ void swapOptimize(const SwapParams& prm, float* const* planes) {
         for (int z = 0; z < prm.depth; ++z) {
             float* dst = planes[c] + (size_t)z * n;
             Rng rng(prm.seed, (prm.stream * 4099ULL + (uint64_t)z) * 16ULL + (uint64_t)c);
-            for (int i = 0; i < n; ++i) dst[i] = (i + 0.5f) / (float)n;
+            for (int i = 0; i < n; ++i) dst[i] = rankValue(i, n);
             for (int i = n - 1; i > 0; --i) std::swap(dst[i], dst[rng.below(i + 1)]);
         }
     }
