@@ -18,11 +18,11 @@ void put16(uint8_t* p, int v) {
 int get16(const uint8_t* p) { return p[0] | (p[1] << 8); }
 
 // Pixel bytes per channel count. 2 ch stored as 24-bit.
-int bytesPerPixel(int c) { return c == 1 ? 1 : c == 2 ? 3 : 4; }
+int bytesPerPixel(int c) { return c == 1 ? 1 : c == 4 ? 4 : 3; }
 
 // Write header + rows of slices [z0, z1) stacked.
 bool writeRange(const std::string& path, const Image& img, int z0, int z1, std::string& err) {
-    if (img.c != 1 && img.c != 2 && img.c != 4) { err = "tga: channels must be 1, 2 or 4"; return false; }
+    if (img.c < 1 || img.c > 4) { err = "tga: channels must be 1..4"; return false; }
     int outH = img.h * (z1 - z0);
     if (img.w > 65535 || outH > 65535) { err = "tga: image too big (max 65535)"; return false; }
 
@@ -49,7 +49,7 @@ bool writeRange(const std::string& path, const Image& img, int z0, int z1, std::
                     // file order is B G R (A)
                     uint8_t r = toByte(img.at(x, y, z, 0));
                     uint8_t g = toByte(img.at(x, y, z, 1));
-                    uint8_t b = img.c == 4 ? toByte(img.at(x, y, z, 2)) : 0;
+                    uint8_t b = img.c >= 3 ? toByte(img.at(x, y, z, 2)) : 0;
                     *p++ = b; *p++ = g; *p++ = r;
                     if (img.c == 4) *p++ = toByte(img.at(x, y, z, 3));
                 }

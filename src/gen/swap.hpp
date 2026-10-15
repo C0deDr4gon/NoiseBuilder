@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include "gen/dist.hpp"
 
 // Swap optimizer (Georgiev & Fajardo 2016), toroidal.
 // Start: each channel of each slice = random permutation of (rank+0.5)/N
@@ -9,6 +10,7 @@
 // Energy = sum over pixel pairs of
 //   exp(-dist^2 / sigma^2 - |vi-vj|^(C/2) / sigmaV^2)
 // C channels = vector value -> joint blue noise, not just per channel.
+// C/2 power: C = 1 sqrt, 2 |v|, 3 |v|^1.5, 4 |v|^2.
 //
 // depth > 1 = spatiotemporal (STBN, Wolfe et al. 2022 style):
 //   pairs in same slice (spatial, sigmaS) + same pixel across time (temporal, sigmaT).
@@ -16,7 +18,8 @@
 struct SwapParams {
     int size = 64;           // w = h, pot
     int depth = 1;           // slices, pot. 1 = plain 2D
-    int channels = 1;        // 1, 2, 4
+    int channels = 1;        // 1, 2, 4 (3 with dist sphere/hemi/coshemi)
+    Dist dist = Dist::Uniform;  // start values. non-uniform -> vector directions
     float sigmaS = 2.5f;     // spatial sigma (paper 2.1, 2.5 tested better)
     float sigmaT = 2.1f;     // temporal sigma (depth > 1)
     float timeWeight = 1.0f; // temporal energy scale (depth > 1)

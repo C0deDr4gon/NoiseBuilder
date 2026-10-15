@@ -9,6 +9,7 @@
 // Channels -> TGA type:
 //   1 ch -> type 3, 8-bit gray
 //   2 ch -> type 2, 24-bit, R = ch0, G = ch1, B = 0
+//   3 ch -> type 2, 24-bit, R G B = ch0..ch2 (vector dists)
 //   4 ch -> type 2, 32-bit, R G B A = ch0..ch3
 // Origin top-left (row 0 first in file).
 

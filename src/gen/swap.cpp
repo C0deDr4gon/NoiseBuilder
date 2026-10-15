@@ -50,6 +50,7 @@ template <int C> inline vf valTerm(const vf* d, vf invSv) {
     vf s = d[0] * d[0];
     for (int c = 1; c < C; ++c) s = fma(d[c], d[c], s);
     if constexpr (C == 2) return sqrt(s) * invSv;
+    else if constexpr (C == 3) { vf q = sqrt(s); return q * sqrt(q) * invSv; }  // |v|^1.5
     else return s * invSv;                          // C == 4: |v|^2
 }
 template <int C> inline float valTermS(const float* d, float invSv) {
@@ -57,6 +58,7 @@ template <int C> inline float valTermS(const float* d, float invSv) {
     float s = 0;
     for (int c = 0; c < C; ++c) s += d[c] * d[c];
     if constexpr (C == 2) return std::sqrt(s) * invSv;
+    else if constexpr (C == 3) { float q = std::sqrt(s); return q * std::sqrt(q) * invSv; }
     else return s * invSv;
 }
 
@@ -256,6 +258,7 @@ void swapOptimize(const SwapParams& prm, float* const* planes) {
             voidCluster(vp, planes[c]);
             continue;
         }
+        if (prm.dist != Dist::Uniform) break;   // vector dists filled below
         for (int z = 0; z < prm.depth; ++z) {
             float* dst = planes[c] + (size_t)z * n;
             Rng rng(prm.seed, (prm.stream * 4099ULL + (uint64_t)z) * 16ULL + (uint64_t)c);
@@ -264,8 +267,16 @@ void swapOptimize(const SwapParams& prm, float* const* planes) {
         }
     }
 
+    if (prm.dist != Dist::Uniform)
+        for (int z = 0; z < prm.depth; ++z) {
+            float* sl[4];
+            for (int c = 0; c < prm.channels; ++c) sl[c] = planes[c] + (size_t)z * n;
+            fillDist(prm.dist, n, prm.seed, prm.stream * 4099ULL + (uint64_t)z, sl);
+        }
+
     switch (prm.channels) {
         case 1: run<1>(prm, planes); break;
+        case 3: run<3>(prm, planes); break;
         case 2: run<2>(prm, planes); break;
         case 4: run<4>(prm, planes); break;
         default: break;

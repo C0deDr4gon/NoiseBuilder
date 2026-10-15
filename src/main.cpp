@@ -27,14 +27,26 @@ static int cmdGen(const Cli& cli) {
 
     if (!isPow2(size) || size < 4) return fail("--size must be power of two >= 4");
     if (!isPow2(depth))            return fail("--depth must be power of two");
-    if (channels != 1 && channels != 2 && channels != 4) return fail("--channels must be 1, 2 or 4");
+    Dist dist = Dist::Uniform;
+    if (!parseDist(cli.get("dist", "uniform"), dist))
+        return fail("--dist must be uniform, disk, circle, sphere, hemi or coshemi");
+    if (dist != Dist::Uniform) {
+        if (algo != "swap" && algo != "stbn-swap") return fail("--dist needs --algo swap or stbn-swap");
+        if (cli.get("init", "rand") != "rand") return fail("--dist needs --init rand");
+        int dc = distChannels(dist);
+        if (cli.has("channels") && channels != dc)
+            return fail(std::string("--dist ") + distName(dist) + " has " + std::to_string(dc) + " channels");
+        channels = dc;
+    }
+    if (dist == Dist::Uniform && channels != 1 && channels != 2 && channels != 4)
+        return fail("--channels must be 1, 2 or 4");
     if (sigma <= 0.0f)             return fail("--sigma must be > 0");
     if (algo != "vc" && algo != "swap" && algo != "stbn" && algo != "stbn-swap")
         return fail("--algo must be vc, swap, stbn or stbn-swap");
     if ((algo == "stbn" || algo == "stbn-swap") && depth < 2) return fail(algo + " needs --depth >= 2");
 
-    std::printf("gen %s  %dx%dx%d  ch %d  seed %d  sigma %.2f  simd %s\n",
-                algo.c_str(), size, size, depth, channels, seed, sigma, simd::name());
+    std::printf("gen %s  %dx%dx%d  ch %d  dist %s  seed %d  sigma %.2f  simd %s\n",
+                algo.c_str(), size, size, depth, channels, distName(dist), seed, sigma, simd::name());
     auto t0 = std::chrono::steady_clock::now();
 
     Image img(size, size, depth, channels);
@@ -73,6 +85,7 @@ static int cmdGen(const Cli& cli) {
         SwapParams p;
         p.size = size;
         p.channels = channels;
+        p.dist = dist;
         p.sigmaS = sigma;
         p.sigmaT = cli.getFloat("sigma-t", 2.1f);
         p.timeWeight = cli.getFloat("time-weight", 1.0f);

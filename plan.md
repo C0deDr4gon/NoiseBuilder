@@ -156,8 +156,14 @@ Wolfe et al. 2022. Big win for raytrace + TAA.
 
 ## Step 8 — AO / raytrace variants
 
-- [ ] Vec2 / unit vec3 / cosine-hemisphere direction noise (pack into 2/4 ch TGA)
-- [ ] Low cross-correlation between channels
+- [x] `--dist disk|circle|sphere|hemi|coshemi` (swap + stbn-swap)
+- [x] Init = Fibonacci point set (near perfect spread), shuffled. Swaps move whole vectors → distribution exact
+- [x] Vector distance energy (C = 2 or 3, power C/2)
+- [x] 3 ch (vec3) → 24-bit RGB TGA. Encode v*0.5+0.5, decode tex*2-1, z up
+- [x] Checked: unit length 1 ± 0.006 (8-bit limit), hemi mean z 0.50, coshemi mean z 0.667
+- [x] Blue: per-channel lowfreq 0.15-0.4 (it 1) → 0.001-0.009 (it 300), 64²
+- [x] stbn-swap coshemi 32²x16: space 0.009, time 0.07 (z: 0.028 / 0.26, weakest)
+- Dropped: "low cross-correlation" item. Pearson fixed by init for swap, not useful.
 
 ---
 
