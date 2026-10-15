@@ -2,14 +2,12 @@
 
 CLI tool. Makes blue noise textures for AO, raytracing, shadows, TAA, dithering.
 
-- C++17 + [libtex](https://github.com/C0deDr4gon/libtex) (C, git submodule) for TGA. Linux + Windows.
+- C++17 + [libtex](https://github.com/C0deDr4gon/libtex) (C, copy in ext/libtex) for TGA. Linux + Windows.
 - CPU only, SIMD (AVX-512 / AVX2 / SSE2 / scalar), threaded.
 - Output: own uncompressed `.tga` (8-bit). Sizes power of two.
 - Tiles seamless (wraps in x, y, and time).
 
 ## Build
-
-Clone with submodules: `git clone --recursive` (or `git submodule update --init`).
 
 Linux (g++ or clang++):
 
