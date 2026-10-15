@@ -60,10 +60,10 @@ Check box after each step. User check before next step.
 
 ## Step 3 — TGA writer + reader
 
-- [ ] Uncompressed TGA, type 3 (gray) and type 2 (RGB/RGBA)
-- [ ] Origin top-left flag set
-- [ ] 3D: one file per slice `name_000.tga` ... and/or one atlas (slices stacked)
-- [ ] Reader for own files only (for analyze tool)
+- [x] Uncompressed TGA, type 3 (gray) and type 2 (RGB/RGBA)
+- [x] Origin top-left flag set
+- [x] 3D: one file per slice `name_000.tga` ... or one atlas (slices stacked)
+- [x] Reader for own files only (for analyze tool)
 
 ---
 
