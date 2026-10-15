@@ -5,11 +5,6 @@
 
 namespace {
 
-uint8_t toByte(float v) {
-    int b = (int)(v * 256.0f);
-    return (uint8_t)(b < 0 ? 0 : b > 255 ? 255 : b);
-}
-
 void put16(uint8_t* p, int v) {
     p[0] = (uint8_t)(v & 0xFF);
     p[1] = (uint8_t)((v >> 8) & 0xFF);
@@ -123,18 +118,17 @@ bool readTga(const std::string& path, Image& out, std::string& err) {
     }
 
     out = Image(w, h, 1, c);
-    auto val = [](uint8_t b) { return (b + 0.5f) / 256.0f; };
     for (int y = 0; y < h; ++y) {
         int fy = topLeft ? y : h - 1 - y;
         const uint8_t* p = px.data() + (size_t)fy * w * bpp;
         for (int x = 0; x < w; ++x, p += bpp) {
             if (bpp == 1) {
-                out.at(x, y, 0, 0) = val(p[0]);
+                out.at(x, y, 0, 0) = fromByte(p[0]);
             } else {
-                out.at(x, y, 0, 0) = val(p[2]);              // R
-                out.at(x, y, 0, 1) = val(p[1]);              // G
-                if (c >= 3) out.at(x, y, 0, 2) = val(p[0]);  // B
-                if (c == 4) out.at(x, y, 0, 3) = val(p[3]);  // A
+                out.at(x, y, 0, 0) = fromByte(p[2]);              // R
+                out.at(x, y, 0, 1) = fromByte(p[1]);              // G
+                if (c >= 3) out.at(x, y, 0, 2) = fromByte(p[0]);  // B
+                if (c == 4) out.at(x, y, 0, 3) = fromByte(p[3]);  // A
             }
         }
     }

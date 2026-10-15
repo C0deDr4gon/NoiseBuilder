@@ -93,10 +93,7 @@ std::vector<double> temporalPower(const Image& img, int ch) {
 void histogram(const Image& img, int ch, int& mn, int& mx) {
     int bins[256] = {};
     const float* p = img.plane(ch);
-    for (size_t i = 0; i < img.pixels(); ++i) {
-        int b = (int)(p[i] * 256.0f);
-        bins[b < 0 ? 0 : b > 255 ? 255 : b]++;
-    }
+    for (size_t i = 0; i < img.pixels(); ++i) bins[toByte(p[i])]++;
     mn = *std::min_element(bins, bins + 256);
     mx = *std::max_element(bins, bins + 256);
 }

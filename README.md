@@ -141,7 +141,7 @@ float3 ray = d.x * T + d.y * B + d.z * N;
 **Sampling notes**
 - Load / point sampling only. Never filter or mip blue noise.
 - Store as linear (UNORM), not sRGB.
-- Values are centered in bins: `(rank + 0.5) / N`.
+- Byte = round(v * 255), read back as byte / 255 (UNORM, same as libtex). Ranks map so every byte is used N / 256 times.
 
 ## Tests
 

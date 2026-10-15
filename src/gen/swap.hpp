@@ -3,7 +3,7 @@
 #include "gen/dist.hpp"
 
 // Swap optimizer (Georgiev & Fajardo 2016), toroidal.
-// Start: each channel of each slice = random permutation of (rank+0.5)/N
+// Start: each channel of each slice = random permutation of rankValue(rank, N)
 // (or void-and-cluster). Swap whole pixel vectors inside one slice ->
 // every slice keeps a perfect per-channel histogram.
 //

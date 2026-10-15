@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <limits>
 #include <vector>
+#include "image.hpp"
 #include "rng.hpp"
 #include "simd.hpp"
 
@@ -194,5 +195,5 @@ void voidCluster(const VcParams& prm, float* out) {
         }
     }
 
-    for (size_t i = 0; i < (size_t)n * d; ++i) out[i] = (rank[i] + 0.5f) / (float)n;
+    for (size_t i = 0; i < (size_t)n * d; ++i) out[i] = rankValue(rank[i], n);
 }

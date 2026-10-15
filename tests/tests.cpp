@@ -31,7 +31,7 @@ static int gFails = 0, gChecks = 0;
         }                                                         \
     } while (0)
 
-// every value (rank+0.5)/N used exactly once in each slice of each channel
+// every value rankValue(rank, N) used exactly once in each slice of each channel
 static bool perfectHistogram(const Image& img) {
     const size_t n = (size_t)img.w * img.h;
     for (int c = 0; c < img.c; ++c)
@@ -39,7 +39,7 @@ static bool perfectHistogram(const Image& img) {
             std::vector<int> seen(n, 0);
             const float* p = img.plane(c) + (size_t)z * n;
             for (size_t i = 0; i < n; ++i) {
-                long r = std::lround(p[i] * (double)n - 0.5);
+                long r = std::lround((p[i] * 255.0 + 0.5) * (double)n / 256.0 - 0.5);
                 if (r < 0 || r >= (long)n || seen[r]++) return false;
             }
         }
@@ -168,7 +168,7 @@ static void testTga() {
         for (int c = 0; c < ch; ++c)
             for (int y = 0; y < 4; ++y)
                 for (int x = 0; x < 8; ++x)
-                    img.at(x, y, 0, c) = ((x * 31 + y * 17 + c * 53) % 256 + 0.5f) / 256.0f;
+                    img.at(x, y, 0, c) = fromByte((uint8_t)((x * 31 + y * 17 + c * 53) % 256));
         std::string path = (dir / ("t" + std::to_string(ch) + ".tga")).string(), err;
         CHECK(writeTga(path, img, 0, err), "write %d ch: %s", ch, err.c_str());
         Image back;
@@ -184,7 +184,7 @@ static void testTga() {
 
     // 3D: slices + atlas
     Image vol(4, 4, 3, 1);
-    for (size_t i = 0; i < vol.data.size(); ++i) vol.data[i] = ((i * 37) % 256 + 0.5f) / 256.0f;
+    for (size_t i = 0; i < vol.data.size(); ++i) vol.data[i] = fromByte((uint8_t)((i * 37) % 256));
     std::string err, sp = (dir / "s.tga").string(), ap = (dir / "a.tga").string();
     CHECK(writeTgaSlices(sp, vol, err), "slices: %s", err.c_str());
     CHECK(std::filesystem::exists(slicePath(sp, 2)), "slice 2 missing");

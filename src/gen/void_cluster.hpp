@@ -2,7 +2,7 @@
 #include <cstdint>
 
 // Void and cluster (Ulichney 1993), toroidal (tiles seamless).
-// Out: w*h*depth values, slice z at z*w*h. value = (rank + 0.5) / (w*h).
+// Out: w*h*depth values, slice z at z*w*h. value = rankValue(rank, w*h).
 // Every slice uses every rank once -> flat histogram per slice.
 //
 // depth > 1 + timeWeight > 0 = spatiotemporal (STBN, Wolfe et al. 2022):

@@ -3,8 +3,8 @@
 #include "image.hpp"
 
 // Own TGA, uncompressed only. No deps.
-// Float value 0..1 -> byte = floor(v * 256), clamp 255.
-// (value = rank / N and N multiple of 256 -> every byte used equal times.)
+// Float value 0..1 -> byte = round(v * 255), clamped (toByte, same as libtex).
+// (value = rankValue and N multiple of 256 -> every byte used equal times.)
 //
 // Channels -> TGA type:
 //   1 ch -> type 3, 8-bit gray
@@ -23,7 +23,7 @@ bool writeTgaSlices(const std::string& path, const Image& img, std::string& err)
 bool writeTgaAtlas(const std::string& path, const Image& img, std::string& err);
 
 // Read own files back (types 2 / 3, 8/24/32 bit, uncompressed, any origin).
-// 24-bit with B all zero -> 2 ch. Other 24-bit -> 3 ch. Values = byte / 256 + half step.
+// 24-bit with B all zero -> 2 ch. Other 24-bit -> 3 ch. Values = byte / 255 (fromByte).
 bool readTga(const std::string& path, Image& out, std::string& err);
 
 // "dir/name.tga", 7 -> "dir/name_007.tga"
