@@ -25,9 +25,9 @@ Check box after each step. User check before next step.
 
 ## Step 1 — Skeleton
 
-- [ ] `build.sh`: `-O3 -std=c++17 -march=native -pthread`, flag for debug
-- [ ] `build.bat`: `cl /O2 /std:c++17 /arch:AVX2` (or `/arch:AVX512`), flag for debug
-- [ ] Folders:
+- [x] `build.sh`: `-O3 -std=c++17 -march=native -pthread`, flag for debug
+- [x] `build.bat`: `cl /O2 /std:c++17 /arch:AVX2` (or `/arch:AVX512`), flag for debug
+- [x] Folders (only main, cli, image, rng now. rest come in own step):
   ```
   build.sh
   build.bat
@@ -43,7 +43,7 @@ Check box after each step. User check before next step.
     analyze/        // fft, spectrum, scores
   tests/
   ```
-- [ ] `--help` print. Nothing else yet.
+- [x] `--help` print. Nothing else yet.
 
 ---
 
