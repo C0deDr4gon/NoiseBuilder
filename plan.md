@@ -104,12 +104,13 @@ Need measure to prove "higher quality". Build before fancy generators.
 
 Higher quality than void-and-cluster. Georgiev & Fajardo 2016 style.
 
-- [ ] Start: random permutation of 0..N-1 (histogram perfect always)
-- [ ] Energy per pair: `exp(-|pi-pj|²/σi² - |vi-vj|^(d/2)/σs²)`, vector value for 2/4 ch
-- [ ] Swap two pixels, keep if energy down (+ annealing option)
-- [ ] Local window only (fast). SIMD over window.
-- [ ] Threads: work on far-apart tiles at same time, deterministic order
-- [ ] Can start from void-and-cluster result → converge faster
+- [x] Start: random permutation of 0..N-1 (histogram perfect always)
+- [x] Energy per pair: `exp(-|pi-pj|²/σi² - |vi-vj|^(d/2)/σs²)`, vector value for 2/4 ch
+- [x] Swap two pixels, keep if energy down (+ annealing option)
+- [x] Local window only, radius 3·σ (fast). SIMD over window, vector exp.
+- [x] Threads: 2x2-colored blocks (side > window radius), same color in parallel, rng per (round, block) → same result any thread count
+- [x] `--init vc` start from void-and-cluster
+- [x] CLI: `--algo swap --sigma-v --iters --temp --init`
 
 ---
 

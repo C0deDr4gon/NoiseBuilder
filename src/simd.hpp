@@ -71,6 +71,7 @@ inline vf operator*(vf a, vf b)      { return { _mm512_mul_ps(a.v, b.v) }; }
 inline vf fma(vf a, vf b, vf c)      { return { _mm512_fmadd_ps(a.v, b.v, c.v) }; } // a*b+c
 inline vf min(vf a, vf b)            { return { _mm512_min_ps(a.v, b.v) }; }
 inline vf max(vf a, vf b)            { return { _mm512_max_ps(a.v, b.v) }; }
+inline vf sqrt(vf a)                { return { _mm512_sqrt_ps(a.v) }; }
 inline vm operator<(vf a, vf b)      { return { _mm512_cmp_ps_mask(a.v, b.v, _CMP_LT_OQ) }; }
 inline vm operator>(vf a, vf b)      { return { _mm512_cmp_ps_mask(a.v, b.v, _CMP_GT_OQ) }; }
 inline vf select(vm m, vf a, vf b)   { return { _mm512_mask_blend_ps(m.m, b.v, a.v) }; } // m ? a : b
@@ -105,6 +106,7 @@ inline vf operator*(vf a, vf b)      { return { _mm256_mul_ps(a.v, b.v) }; }
 inline vf fma(vf a, vf b, vf c)      { return { _mm256_fmadd_ps(a.v, b.v, c.v) }; }
 inline vf min(vf a, vf b)            { return { _mm256_min_ps(a.v, b.v) }; }
 inline vf max(vf a, vf b)            { return { _mm256_max_ps(a.v, b.v) }; }
+inline vf sqrt(vf a)                { return { _mm256_sqrt_ps(a.v) }; }
 inline vm operator<(vf a, vf b)      { return { _mm256_cmp_ps(a.v, b.v, _CMP_LT_OQ) }; }
 inline vm operator>(vf a, vf b)      { return { _mm256_cmp_ps(a.v, b.v, _CMP_GT_OQ) }; }
 inline vf select(vm m, vf a, vf b)   { return { _mm256_blendv_ps(b.v, a.v, m.m) }; }
@@ -153,6 +155,7 @@ inline vf operator*(vf a, vf b)      { return { _mm_mul_ps(a.v, b.v) }; }
 inline vf fma(vf a, vf b, vf c)      { return { _mm_add_ps(_mm_mul_ps(a.v, b.v), c.v) }; } // no FMA on SSE2
 inline vf min(vf a, vf b)            { return { _mm_min_ps(a.v, b.v) }; }
 inline vf max(vf a, vf b)            { return { _mm_max_ps(a.v, b.v) }; }
+inline vf sqrt(vf a)                { return { _mm_sqrt_ps(a.v) }; }
 inline vm operator<(vf a, vf b)      { return { _mm_cmplt_ps(a.v, b.v) }; }
 inline vm operator>(vf a, vf b)      { return { _mm_cmpgt_ps(a.v, b.v) }; }
 inline vf select(vm m, vf a, vf b)   { return { _mm_or_ps(_mm_and_ps(m.m, a.v), _mm_andnot_ps(m.m, b.v)) }; }
@@ -197,6 +200,7 @@ inline vf operator*(vf a, vf b)      { return { a.v * b.v }; }
 inline vf fma(vf a, vf b, vf c)      { return { a.v * b.v + c.v }; }
 inline vf min(vf a, vf b)            { return { a.v < b.v ? a.v : b.v }; }
 inline vf max(vf a, vf b)            { return { a.v > b.v ? a.v : b.v }; }
+inline vf sqrt(vf a)                { return { std::sqrt(a.v) }; }
 inline vm operator<(vf a, vf b)      { return { a.v < b.v }; }
 inline vm operator>(vf a, vf b)      { return { a.v > b.v }; }
 inline vf select(vm m, vf a, vf b)   { return { m.m ? a.v : b.v }; }
@@ -220,6 +224,7 @@ inline vf pow2i(vf n) {
 inline vf& operator+=(vf& a, vf b) { a = a + b; return a; }
 inline vf& operator-=(vf& a, vf b) { a = a - b; return a; }
 inline vf& operator*=(vf& a, vf b) { a = a * b; return a; }
+inline vf abs(vf a) { return max(a, zero() - a); }
 
 // Fast e^x. Rel error ~2e-7 in range. x < -87 -> 0. x > 88 clamped.
 // e^x = 2^n * 2^f, n = round(x*log2e), f in [-0.5, 0.5], 2^f by poly.

@@ -2,6 +2,7 @@
 #include <cstdio>
 #include "analyze/analyze.hpp"
 #include "cli.hpp"
+#include "gen/swap.hpp"
 #include "gen/void_cluster.hpp"
 #include "image.hpp"
 #include "io/tga.hpp"
@@ -19,7 +20,7 @@ static int cmdGen(const Cli& cli) {
     int channels = cli.getInt("channels", 1);
     int seed     = cli.getInt("seed", 1);
     int threads  = cli.getInt("threads", 0);
-    float sigma  = cli.getFloat("sigma", 1.9f);
+    float sigma  = cli.getFloat("sigma", algo == "swap" ? 2.1f : 1.9f);
     std::string out = cli.get("out", "noise.tga");
     bool atlas   = cli.has("atlas");
 
@@ -27,24 +28,50 @@ static int cmdGen(const Cli& cli) {
     if (!isPow2(depth))            return fail("--depth must be power of two");
     if (channels != 1 && channels != 2 && channels != 4) return fail("--channels must be 1, 2 or 4");
     if (sigma <= 0.0f)             return fail("--sigma must be > 0");
-    if (algo != "vc")              return fail("--algo " + algo + " not built yet (have: vc)");
+    if (algo != "vc" && algo != "swap") return fail("--algo " + algo + " not built yet (have: vc, swap)");
 
     std::printf("gen %s  %dx%dx%d  ch %d  seed %d  sigma %.2f  simd %s\n",
                 algo.c_str(), size, size, depth, channels, seed, sigma, simd::name());
     auto t0 = std::chrono::steady_clock::now();
 
-    // vc = 2D only. Each slice + channel = own texture (own rng stream).
     Image img(size, size, depth, channels);
-    int jobs = depth * channels;
-    parallelFor(jobs, threads, [&](int j) {
-        int z = j / channels, ch = j % channels;
-        VcParams p;
-        p.w = p.h = size;
-        p.sigma = sigma;
+    if (algo == "vc") {
+        // 2D only. Each slice + channel = own texture (own rng stream).
+        int jobs = depth * channels;
+        parallelFor(jobs, threads, [&](int j) {
+            int z = j / channels, ch = j % channels;
+            VcParams p;
+            p.w = p.h = size;
+            p.sigma = sigma;
+            p.seed = (uint64_t)seed;
+            p.stream = (uint64_t)j;
+            voidCluster(p, &img.at(0, 0, z, ch));
+        });
+    } else {
+        // swap: all channels optimized together (vector value). Slices independent.
+        std::string init = cli.get("init", "rand");
+        if (init != "rand" && init != "vc") return fail("--init must be rand or vc");
+        SwapParams p;
+        p.size = size;
+        p.channels = channels;
+        p.sigmaS = sigma;
+        p.sigmaV = cli.getFloat("sigma-v", 1.0f);
+        p.iters = cli.getInt("iters", 100);
+        p.temp = cli.getFloat("temp", 0.0f);
+        p.initVc = init == "vc";
         p.seed = (uint64_t)seed;
-        p.stream = (uint64_t)j;
-        voidCluster(p, &img.at(0, 0, z, ch));
-    });
+        if (p.iters < 1) return fail("--iters must be >= 1");
+        // one slice -> threads inside optimizer. many slices -> one thread per slice.
+        p.threads = depth == 1 ? threads : 1;
+        p.progress = depth == 1;
+        parallelFor(depth, depth == 1 ? 1 : threads, [&](int z) {
+            SwapParams pz = p;
+            pz.stream = (uint64_t)z;
+            float* planes[4];
+            for (int c = 0; c < channels; ++c) planes[c] = &img.at(0, 0, z, c);
+            swapOptimize(pz, planes);
+        });
+    }
 
     double sec = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
     std::printf("done in %.2fs\n", sec);
