@@ -141,7 +141,7 @@ Wolfe et al. 2022. Big win for raytrace + TAA.
 | swap (tuned) | 64² | 0.0057 | - |
 | swap 4 ch (tuned, was 0.029) | 64² | 0.0038 | - |
 | vc slices | 32²x16 | 0.0003 | 1.01 (white) |
-| **stbn (vc 3D)** | 32²x16 | **0.0013** | **0.056** |
+| **stbn (vc 3D)** | 32²x16 | **0.0013** | **0.056** (0.044 with k=0 fix) |
 | stbn 64²x32 | 64²x32 | 0.0011 | 0.044 |
 | stbn-swap rand | 32²x16 | 0.017 | 0.20 |
 | stbn-swap init vc | 32²x16 | 0.0026 | 0.077 |
@@ -170,16 +170,23 @@ Wolfe et al. 2022. Big win for raytrace + TAA.
 ## Step 9 — CLI final
 
 ```
-noisebuilder gen --algo vc|swap|stbn --size 128 --depth 64 \
-                 --channels 1|2|4 --seed 42 --sigma 1.9 \
-                 --threads 0 --out blue.tga
-noisebuilder analyze blue.tga --out report/
+noisebuilder gen --algo vc|swap|stbn|stbn-swap --size 128 --depth 64 \
+                 --channels 1|2|4 --dist uniform|disk|circle|sphere|hemi|coshemi \
+                 --seed 42 --sigma 1.9 --threads 0 --out blue.tga [--atlas] [--report dir]
+noisebuilder analyze blue.tga [--depth N] [--atlas] [--out dir]
+noisebuilder version
 ```
 
-- [ ] Arg check, nice error (not pot = error)
-- [ ] Progress print
-- [ ] Print which SIMD path built in
-- [ ] Same seed = same file on Linux + Windows (careful: fast exp + FMA must match, or accept tiny diff)
+- [x] Arg check, nice error (not pot = error)
+- [x] Strict numbers (`--size abc` = error, not 0)
+- [x] Unknown / wrong-algo options = error (`--sizes`, `--iters` with vc)
+- [x] All checks before any work
+- [x] Progress print (swap, stbn-swap, stbn)
+- [x] Print which SIMD path built in (`version`, help, gen header)
+- [x] Help has examples
+- [x] Same seed = same file for any thread count (tested)
+- [ ] Same file Linux vs Windows: not tested here. Risk: std::exp in kernel tables + FMA can differ by 1 ulp → tie break can differ. Values still valid blue noise.
+- [x] Fix: temporal score now includes k=0 (pixel mean over time). Needs depth >= 16 to be meaningful (depth 4 = only 3 freqs).
 
 ---
 

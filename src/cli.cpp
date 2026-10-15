@@ -1,5 +1,6 @@
 #include "cli.hpp"
 #include "simd.hpp"
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 
@@ -8,14 +9,40 @@ std::string Cli::get(const std::string& k, const std::string& def) const {
     return it == opts.end() ? def : it->second;
 }
 
+// Strict parse: whole string must be a number, else badValue is set.
 int Cli::getInt(const std::string& k, int def) const {
     auto it = opts.find(k);
-    return it == opts.end() ? def : std::atoi(it->second.c_str());
+    if (it == opts.end()) return def;
+    const char* s = it->second.c_str();
+    char* end = nullptr;
+    long v = std::strtol(s, &end, 10);
+    if (end == s || *end != '\0' || v < -2147483647L || v > 2147483647L) {
+        if (badValue.empty()) badValue = "--" + k + " needs an integer, got '" + it->second + "'";
+        return def;
+    }
+    return (int)v;
 }
 
 float Cli::getFloat(const std::string& k, float def) const {
     auto it = opts.find(k);
-    return it == opts.end() ? def : (float)std::atof(it->second.c_str());
+    if (it == opts.end()) return def;
+    const char* s = it->second.c_str();
+    char* end = nullptr;
+    float v = std::strtof(s, &end);
+    if (end == s || *end != '\0' || !std::isfinite(v)) {
+        if (badValue.empty()) badValue = "--" + k + " needs a number, got '" + it->second + "'";
+        return def;
+    }
+    return v;
+}
+
+std::string Cli::unknownOption(const std::vector<std::string>& known) const {
+    for (const auto& kv : opts) {
+        bool ok = false;
+        for (const auto& k : known) ok = ok || kv.first == k;
+        if (!ok) return kv.first;
+    }
+    return "";
 }
 
 Cli parseCli(int argc, char** argv) {
@@ -24,6 +51,7 @@ Cli parseCli(int argc, char** argv) {
 
     cli.command = argv[1];
     if (cli.command == "-h" || cli.command == "--help") cli.command = "help";
+    if (cli.command == "-v" || cli.command == "--version") cli.command = "version";
 
     for (int i = 2; i < argc; ++i) {
         std::string a = argv[i];
@@ -42,13 +70,14 @@ Cli parseCli(int argc, char** argv) {
 }
 
 void printHelp() {
-    std::printf("noisebuilder - blue noise texture generator (simd: %s, %d wide)\n\n",
-                simd::name(), simd::W);
+    std::printf("noisebuilder %s - blue noise texture generator (simd: %s, %d wide)\n\n",
+                kVersion, simd::name(), simd::W);
     std::printf(
         "usage:\n"
         "  noisebuilder gen     [options]   make noise texture\n"
         "  noisebuilder analyze <file.tga>  check noise quality\n"
         "  noisebuilder help                this text\n"
+        "  noisebuilder version             version + simd path\n"
         "\n"
         "gen options:\n"
         "  --algo     A             generator            (default vc)\n"
@@ -88,5 +117,12 @@ void printHelp() {
         "  --depth    N             3D: slice count      (default 1)\n"
         "  --atlas                  3D: input is one stacked file\n"
         "  --out      dir           report dir           (default report)\n"
-        "  writes chN_spectrum.tga, chN_radial.csv, chN_temporal.csv (3D)\n");
+        "  writes chN_spectrum.tga, chN_radial.csv, chN_temporal.csv (3D)\n"
+        "\n"
+        "examples:\n"
+        "  noisebuilder gen --size 128 --out bn.tga                       1 ch blue noise\n"
+        "  noisebuilder gen --size 128 --channels 4 --out bn4.tga         4 independent ch\n"
+        "  noisebuilder gen --algo stbn --size 128 --depth 64 --out st.tga  blue over time\n"
+        "  noisebuilder gen --algo stbn-swap --dist coshemi --size 64 --depth 32 --out ao.tga\n"
+        "  noisebuilder analyze st.tga --depth 64 --out report\n");
 }

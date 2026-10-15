@@ -16,6 +16,7 @@ struct VcParams {
     float timeWeight = 0.0f;  // temporal kernel scale. 0 = no time link
     uint64_t seed = 1;
     uint64_t stream = 0;      // different stream = different texture, same seed
+    bool progress = false;    // print % done
 };
 
 void voidCluster(const VcParams& p, float* out);

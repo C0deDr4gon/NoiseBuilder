@@ -1,5 +1,6 @@
 #include <chrono>
 #include <cstdio>
+#include <vector>
 #include "analyze/analyze.hpp"
 #include "cli.hpp"
 #include "gen/swap.hpp"
@@ -15,6 +16,18 @@ static int fail(const std::string& msg) {
 
 static int cmdGen(const Cli& cli) {
     std::string algo = cli.get("algo", "vc");
+    if (!cli.args.empty()) return fail("gen: unexpected arg '" + cli.args[0] + "'");
+
+    // Options each algo uses. Anything else = typo or wrong algo -> error.
+    std::vector<std::string> known = {"algo", "size", "depth", "channels", "seed", "threads",
+                                      "sigma", "out", "atlas", "report"};
+    if (algo == "stbn") known.insert(known.end(), {"sigma-t", "time-weight"});
+    if (algo == "swap" || algo == "stbn-swap")
+        known.insert(known.end(), {"sigma-v", "iters", "temp", "init", "dist"});
+    if (algo == "stbn-swap") known.insert(known.end(), {"sigma-t", "time-weight"});
+    std::string bad = cli.unknownOption(known);
+    if (!bad.empty()) return fail("--" + bad + " not known for --algo " + algo + " (see help)");
+
     int size     = cli.getInt("size", 64);
     int depth    = cli.getInt("depth", 1);
     int channels = cli.getInt("channels", 1);
@@ -24,6 +37,7 @@ static int cmdGen(const Cli& cli) {
     float sigma  = cli.getFloat("sigma", vcBased ? 1.9f : 2.5f);
     std::string out = cli.get("out", "noise.tga");
     bool atlas   = cli.has("atlas");
+    if (!cli.badValue.empty()) return fail(cli.badValue);
 
     if (!isPow2(size) || size < 4) return fail("--size must be power of two >= 4");
     if (!isPow2(depth))            return fail("--depth must be power of two");
@@ -44,6 +58,22 @@ static int cmdGen(const Cli& cli) {
     if (algo != "vc" && algo != "swap" && algo != "stbn" && algo != "stbn-swap")
         return fail("--algo must be vc, swap, stbn or stbn-swap");
     if ((algo == "stbn" || algo == "stbn-swap") && depth < 2) return fail(algo + " needs --depth >= 2");
+
+    // Check algo options before any work.
+    bool swapType = algo == "swap" || algo == "stbn-swap";
+    bool stbnType = algo == "stbn" || algo == "stbn-swap";
+    if (swapType) {
+        std::string init = cli.get("init", "rand");
+        if (init != "rand" && init != "vc") return fail("--init must be rand or vc");
+        if (cli.getInt("iters", 100) < 1) return fail("--iters must be >= 1");
+        if (cli.getFloat("temp", 0.0f) < 0.0f) return fail("--temp must be >= 0");
+        if (cli.getFloat("sigma-v", 4.0f) <= 0.0f) return fail("--sigma-v must be > 0");
+    }
+    if (stbnType) {
+        if (cli.getFloat("sigma-t", 1.5f) <= 0.0f) return fail("--sigma-t must be > 0");
+        if (cli.getFloat("time-weight", 1.0f) < 0.0f) return fail("--time-weight must be >= 0");
+    }
+    if (!cli.badValue.empty()) return fail(cli.badValue);
 
     std::printf("gen %s  %dx%dx%d  ch %d  dist %s  seed %d  sigma %.2f  simd %s\n",
                 algo.c_str(), size, size, depth, channels, distName(dist), seed, sigma, simd::name());
@@ -71,17 +101,14 @@ static int cmdGen(const Cli& cli) {
         p.sigmaT = cli.getFloat("sigma-t", 1.5f);
         p.timeWeight = cli.getFloat("time-weight", 1.0f);
         p.seed = (uint64_t)seed;
-        if (p.sigmaT <= 0.0f) return fail("--sigma-t must be > 0");
-        if (p.timeWeight < 0.0f) return fail("--time-weight must be >= 0");
         parallelFor(channels, threads, [&](int ch) {
             VcParams pc = p;
             pc.stream = (uint64_t)ch;
+            pc.progress = ch == 0;   // one printer
             voidCluster(pc, img.plane(ch));
         });
     } else {
         // swap / stbn-swap: all channels optimized together (vector value).
-        std::string init = cli.get("init", "rand");
-        if (init != "rand" && init != "vc") return fail("--init must be rand or vc");
         SwapParams p;
         p.size = size;
         p.channels = channels;
@@ -92,11 +119,8 @@ static int cmdGen(const Cli& cli) {
         p.sigmaV = cli.getFloat("sigma-v", 4.0f);
         p.iters = cli.getInt("iters", 100);
         p.temp = cli.getFloat("temp", 0.0f);
-        p.initVc = init == "vc";
+        p.initVc = cli.get("init", "rand") == "vc";
         p.seed = (uint64_t)seed;
-        if (p.iters < 1) return fail("--iters must be >= 1");
-        if (p.sigmaT <= 0.0f || p.sigmaV <= 0.0f) return fail("--sigma-t / --sigma-v must be > 0");
-        if (p.timeWeight < 0.0f) return fail("--time-weight must be >= 0");
 
         float* planes[4];
         p.vcSigmaT = p.sigmaT;
@@ -168,7 +192,11 @@ static bool loadVolume(const std::string& path, int depth, bool atlas, Image& vo
 
 static int cmdAnalyze(const Cli& cli) {
     if (cli.args.empty()) return fail("analyze: need file.tga");
+    if (cli.args.size() > 1) return fail("analyze: one file only");
+    std::string bad = cli.unknownOption({"depth", "atlas", "out"});
+    if (!bad.empty()) return fail("--" + bad + " not known for analyze (see help)");
     int depth = cli.getInt("depth", 1);
+    if (!cli.badValue.empty()) return fail(cli.badValue);
     if (!isPow2(depth)) return fail("--depth must be power of two");
     std::string dir = cli.get("out", "report");
 
@@ -189,6 +217,10 @@ int main(int argc, char** argv) {
     }
 
     if (cli.command == "help") { printHelp(); return 0; }
+    if (cli.command == "version") {
+        std::printf("noisebuilder %s  simd %s (%d wide)\n", kVersion, simd::name(), simd::W);
+        return 0;
+    }
     if (cli.command == "gen")     return cmdGen(cli);
     if (cli.command == "analyze") return cmdAnalyze(cli);
     return fail("unknown command: " + cli.command);

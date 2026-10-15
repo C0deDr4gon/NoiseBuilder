@@ -6,7 +6,7 @@
 struct ChannelReport {
     double lowFreq = 0;      // mean spatial power, 0 < radius <= size/8. Lower = more blue.
     double highFreq = 0;     // mean spatial power, radius > size/4. ~1+ for blue.
-    double tLowFreq = -1;    // 3D only: mean temporal power, low freqs. -1 = not 3D.
+    double tLowFreq = -1;    // 3D only: mean temporal power, freq 0 .. depth/8 (min 1). -1 = not 3D.
     int histMin = 0, histMax = 0;   // byte histogram bin counts (256 bins)
     double seamX = 0, seamY = 0;    // wrap edge diff / inner diff. ~1.0 = seamless.
 };

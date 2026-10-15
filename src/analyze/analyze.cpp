@@ -176,10 +176,12 @@ Report analyzeImage(const Image& img, const std::string& outDir) {
         std::vector<double> tpow;
         if (img.d > 1) {
             tpow = temporalPower(img, c);
+            // k = 0 here = each pixel's mean over time vs global mean. Most important
+            // low freq for temporal (pixel average converges), so it is included.
             int kLow = std::max(1, img.d / 8);
             double sum = 0;
-            for (int k = 1; k <= kLow; ++k) sum += tpow[k];
-            cr.tLowFreq = sum / kLow;
+            for (int k = 0; k <= kLow; ++k) sum += tpow[k];
+            cr.tLowFreq = sum / (kLow + 1);
         }
 
         if (!outDir.empty()) {

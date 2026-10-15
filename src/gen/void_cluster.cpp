@@ -1,6 +1,7 @@
 #include "gen/void_cluster.hpp"
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <limits>
 #include <vector>
 #include "rng.hpp"
@@ -179,12 +180,19 @@ void voidCluster(const VcParams& prm, float* out) {
     // (Ulichney phase 3 = tightest cluster of zeros. With toroidal kernel,
     //  zero-energy = const - one-energy, so it is the same pick.)
     f = std::move(proto);
-    for (int rk = ones; rk < n; ++rk)
+    int lastTick = 0;
+    for (int rk = ones; rk < n; ++rk) {
         for (int z = 0; z < d; ++z) {
             int v = f.bestVoid(z);
             f.togglePix(v, z, 1.0f);
             rank[(size_t)z * n + v] = rk;
         }
+        int tick = (int)((int64_t)(rk - ones + 1) * 10 / (n - ones));
+        if (prm.progress && tick > lastTick) {
+            lastTick = tick;
+            std::printf("  vc %3d%%\n", tick * 10), std::fflush(stdout);
+        }
+    }
 
     for (size_t i = 0; i < (size_t)n * d; ++i) out[i] = (rank[i] + 0.5f) / (float)n;
 }
