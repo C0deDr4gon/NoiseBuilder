@@ -129,6 +129,17 @@ Wolfe et al. 2022. Big win for raytrace + TAA.
 
 ---
 
+## Build results (here, 4 cores, AVX-512)
+
+- Builds clean, no warnings. SSE2 / AVX2 / AVX-512 all build + same scores.
+- Same output for 1 vs 4 threads (swap, stbn).
+- 1 ch lowfreq (lower = better), 64x64: vc 0.0003, swap 0.004-0.01 (tuned). vc wins scalar.
+- swap 2 ch: cross-corr 0.004 vs vc 0.022. Per-channel lowfreq worse.
+- stbn 32x32x16: t-lowfreq 0.23 (white = 1.0, vc/swap slices ~1.0). Spatial 0.024 (cost of time term).
+- Todo: tune defaults (sigma-v bigger helps swap: 2-4, sigma 2.5-3). Maybe stbn on void-and-cluster (paper way) for better spatial.
+
+---
+
 ## Step 8 — AO / raytrace variants
 
 - [ ] Vec2 / unit vec3 / cosine-hemisphere direction noise (pack into 2/4 ch TGA)

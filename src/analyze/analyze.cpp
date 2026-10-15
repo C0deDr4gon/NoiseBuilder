@@ -29,7 +29,7 @@ std::vector<double> spatialPower(const Image& img, int ch) {
     std::vector<double> pow(n, 0.0);
     std::vector<cplx> buf(n);
     for (int z = 0; z < img.d; ++z) {
-        const float* p = &img.at(0, 0, z, ch);
+        const float* p = img.plane(ch) + (size_t)z * n;
         double m = mean(p, n), var = variance(p, n, m);
         if (var <= 0) continue;
         for (size_t i = 0; i < n; ++i) buf[i] = cplx(p[i] - m, 0.0);
