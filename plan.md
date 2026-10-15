@@ -207,8 +207,9 @@ noisebuilder version
 
 ## Step 11 — Docs
 
-- [ ] README: build, usage, spectrum pictures
-- [ ] Shader use: tile, offset per frame, golden ratio
+- [x] README: build, algos, dists, usage, options, quality numbers
+- [x] Shader use: tile, golden ratio per frame (2D), stbn slice per frame, coshemi decode, many samples, no filtering / sRGB
+- [ ] Spectrum pictures (need a build run; skipped)
 
 ---
 
