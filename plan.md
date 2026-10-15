@@ -192,11 +192,16 @@ noisebuilder version
 
 ## Step 10 — Tests
 
-- [ ] Tiny test exe, no framework. `build.sh test`
-- [ ] RNG determinism, toroidal distance, histogram uniform
-- [ ] SIMD path == scalar path (within epsilon)
-- [ ] 32x32 (and 32x32x8 3D) quality gate: low-freq energy below threshold
-- [ ] TGA write → read round trip
+- [x] Tiny test exe, no framework: `tests/tests.cpp`. `./build.sh test` / `build.bat test` → `bin/noisebuilder_tests`
+- [x] rng: same seed = same, other seed/stream differ, below() range
+- [x] simd: vector exp vs std::exp + vs expScalar (rel < 1e-6), exp(-200) = 0, reductions, aligned alloc
+- [x] fft: delta → flat, cosine peak, Parseval 2D
+- [x] tga: write → read round trip 1/2/3/4 ch, slices + atlas, slicePath
+- [x] vc: perfect histogram, seed determinism, 32² quality gate (lowfreq < 0.002), seams ~1
+- [x] stbn: per-slice histogram, space < 0.005, time < 0.1, independent slices ~white over time
+- [x] swap / stbn-swap: histogram, quality gate, 1 vs 4 threads identical, init vc
+- [x] dist: unit length, inside disk, hemi mean z 0.5, coshemi mean z 2/3
+- [ ] Not built / run yet (waiting for user)
 
 ---
 
