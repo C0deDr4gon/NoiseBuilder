@@ -20,7 +20,8 @@ static int cmdGen(const Cli& cli) {
     int channels = cli.getInt("channels", 1);
     int seed     = cli.getInt("seed", 1);
     int threads  = cli.getInt("threads", 0);
-    float sigma  = cli.getFloat("sigma", algo == "vc" ? 1.9f : 2.1f);
+    bool vcBased = algo == "vc" || algo == "stbn";
+    float sigma  = cli.getFloat("sigma", vcBased ? 1.9f : 2.5f);
     std::string out = cli.get("out", "noise.tga");
     bool atlas   = cli.has("atlas");
 
@@ -28,8 +29,9 @@ static int cmdGen(const Cli& cli) {
     if (!isPow2(depth))            return fail("--depth must be power of two");
     if (channels != 1 && channels != 2 && channels != 4) return fail("--channels must be 1, 2 or 4");
     if (sigma <= 0.0f)             return fail("--sigma must be > 0");
-    if (algo != "vc" && algo != "swap" && algo != "stbn") return fail("--algo must be vc, swap or stbn");
-    if (algo == "stbn" && depth < 2) return fail("stbn needs --depth >= 2 (2D: use swap)");
+    if (algo != "vc" && algo != "swap" && algo != "stbn" && algo != "stbn-swap")
+        return fail("--algo must be vc, swap, stbn or stbn-swap");
+    if ((algo == "stbn" || algo == "stbn-swap") && depth < 2) return fail(algo + " needs --depth >= 2");
 
     std::printf("gen %s  %dx%dx%d  ch %d  seed %d  sigma %.2f  simd %s\n",
                 algo.c_str(), size, size, depth, channels, seed, sigma, simd::name());
@@ -48,8 +50,24 @@ static int cmdGen(const Cli& cli) {
             p.stream = (uint64_t)j;
             voidCluster(p, &img.at(0, 0, z, ch));
         });
+    } else if (algo == "stbn") {
+        // vc in 3D, time-linked. Channels independent (own stream).
+        VcParams p;
+        p.w = p.h = size;
+        p.depth = depth;
+        p.sigma = sigma;
+        p.sigmaT = cli.getFloat("sigma-t", 1.5f);
+        p.timeWeight = cli.getFloat("time-weight", 1.0f);
+        p.seed = (uint64_t)seed;
+        if (p.sigmaT <= 0.0f) return fail("--sigma-t must be > 0");
+        if (p.timeWeight < 0.0f) return fail("--time-weight must be >= 0");
+        parallelFor(channels, threads, [&](int ch) {
+            VcParams pc = p;
+            pc.stream = (uint64_t)ch;
+            voidCluster(pc, img.plane(ch));
+        });
     } else {
-        // swap / stbn: all channels optimized together (vector value).
+        // swap / stbn-swap: all channels optimized together (vector value).
         std::string init = cli.get("init", "rand");
         if (init != "rand" && init != "vc") return fail("--init must be rand or vc");
         SwapParams p;
@@ -58,7 +76,7 @@ static int cmdGen(const Cli& cli) {
         p.sigmaS = sigma;
         p.sigmaT = cli.getFloat("sigma-t", 2.1f);
         p.timeWeight = cli.getFloat("time-weight", 1.0f);
-        p.sigmaV = cli.getFloat("sigma-v", 1.0f);
+        p.sigmaV = cli.getFloat("sigma-v", 4.0f);
         p.iters = cli.getInt("iters", 100);
         p.temp = cli.getFloat("temp", 0.0f);
         p.initVc = init == "vc";
@@ -68,7 +86,9 @@ static int cmdGen(const Cli& cli) {
         if (p.timeWeight < 0.0f) return fail("--time-weight must be >= 0");
 
         float* planes[4];
-        if (algo == "stbn") {
+        p.vcSigmaT = p.sigmaT;
+        p.vcTimeWeight = p.timeWeight;
+        if (algo == "stbn-swap") {
             // whole volume at once, threads inside optimizer
             p.depth = depth;
             p.threads = threads;

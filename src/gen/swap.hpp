@@ -17,14 +17,16 @@ struct SwapParams {
     int size = 64;           // w = h, pot
     int depth = 1;           // slices, pot. 1 = plain 2D
     int channels = 1;        // 1, 2, 4
-    float sigmaS = 2.1f;     // spatial sigma (paper 2.1)
+    float sigmaS = 2.5f;     // spatial sigma (paper 2.1, 2.5 tested better)
     float sigmaT = 2.1f;     // temporal sigma (depth > 1)
     float timeWeight = 1.0f; // temporal energy scale (depth > 1)
-    float sigmaV = 1.0f;     // value sigma (paper 1.0)
+    float sigmaV = 4.0f;     // value sigma (paper 1.0, 4.0 tested better)
     int iters = 100;         // swap tries per pixel
     float temp = 0.0f;       // annealing start temp, 0 = greedy
-    bool initVc = false;     // start from void-and-cluster per slice/channel
+    bool initVc = false;     // start from void-and-cluster (3D spatiotemporal if depth > 1)
     float vcSigma = 1.9f;
+    float vcSigmaT = 1.5f;
+    float vcTimeWeight = 1.0f;
     uint64_t seed = 1;
     uint64_t stream = 0;
     int threads = 1;

@@ -14,7 +14,8 @@ struct ChannelReport {
 struct Report {
     ChannelReport ch[4];
     int channels = 0;
-    double maxCrossCorr = 0;  // max |pearson| between any two channels
+    double maxCrossCorr = 0;  // max |pearson| between any two channels.
+                              // Note: swap moves whole pixel vectors -> this is fixed by init.
 };
 
 // Run all checks. outDir non-empty -> write spectrum TGA + CSV files there.

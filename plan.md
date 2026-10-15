@@ -132,11 +132,25 @@ Wolfe et al. 2022. Big win for raytrace + TAA.
 ## Build results (here, 4 cores, AVX-512)
 
 - Builds clean, no warnings. SSE2 / AVX2 / AVX-512 all build + same scores.
-- Same output for 1 vs 4 threads (swap, stbn).
-- 1 ch lowfreq (lower = better), 64x64: vc 0.0003, swap 0.004-0.01 (tuned). vc wins scalar.
-- swap 2 ch: cross-corr 0.004 vs vc 0.022. Per-channel lowfreq worse.
-- stbn 32x32x16: t-lowfreq 0.23 (white = 1.0, vc/swap slices ~1.0). Spatial 0.024 (cost of time term).
-- Todo: tune defaults (sigma-v bigger helps swap: 2-4, sigma 2.5-3). Maybe stbn on void-and-cluster (paper way) for better spatial.
+- Same output for 1 vs 4 threads (swap, stbn, stbn-swap).
+- Scores (lowfreq, lower = better, white = 1.0):
+
+| algo | size | space | time |
+|---|---|---|---|
+| vc | 64² | 0.0003 | - |
+| swap (tuned) | 64² | 0.0057 | - |
+| swap 4 ch (tuned, was 0.029) | 64² | 0.0038 | - |
+| vc slices | 32²x16 | 0.0003 | 1.01 (white) |
+| **stbn (vc 3D)** | 32²x16 | **0.0013** | **0.056** |
+| stbn 64²x32 | 64²x32 | 0.0011 | 0.044 |
+| stbn-swap rand | 32²x16 | 0.017 | 0.20 |
+| stbn-swap init vc | 32²x16 | 0.0026 | 0.077 |
+
+- [x] stbn now = void and cluster in 3D (cross kernel: space gauss in slice + time gauss same pixel), slices step together → per-slice flat histogram. 50x faster than swap version.
+- [x] old swap stbn kept as `stbn-swap`, `--init vc` starts it from stbn.
+- [x] Tuned defaults: stbn sigma-t 1.5. swap sigma 2.5, sigma-v 4.0.
+- Note: channel cross-corr (pearson) is fixed by init for swap (whole pixel vectors move). Not a real quality metric for swap.
+- Note: vc best for per-channel quality. swap/stbn-swap only for joint vector energy, analyzer doesn't measure that yet.
 
 ---
 

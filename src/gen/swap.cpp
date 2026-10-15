@@ -242,24 +242,27 @@ void run(const SwapParams& prm, float* const* planes) {
 void swapOptimize(const SwapParams& prm, float* const* planes) {
     const int n = prm.size * prm.size;
 
-    // Init each slice + channel.
-    for (int z = 0; z < prm.depth; ++z)
-        for (int c = 0; c < prm.channels; ++c) {
-            float* dst = planes[c] + (size_t)z * n;
-            uint64_t stream = (prm.stream * 4099ULL + (uint64_t)z) * 16ULL + (uint64_t)c;
-            if (prm.initVc) {
-                VcParams vp;
-                vp.w = vp.h = prm.size;
-                vp.sigma = prm.vcSigma;
-                vp.seed = prm.seed;
-                vp.stream = stream;
-                voidCluster(vp, dst);
-            } else {
-                Rng rng(prm.seed, stream);
-                for (int i = 0; i < n; ++i) dst[i] = (i + 0.5f) / (float)n;
-                for (int i = n - 1; i > 0; --i) std::swap(dst[i], dst[rng.below(i + 1)]);
-            }
+    // Init each channel. vc init on volume = spatiotemporal vc (time-linked).
+    for (int c = 0; c < prm.channels; ++c) {
+        if (prm.initVc) {
+            VcParams vp;
+            vp.w = vp.h = prm.size;
+            vp.depth = prm.depth;
+            vp.sigma = prm.vcSigma;
+            vp.sigmaT = prm.vcSigmaT;
+            vp.timeWeight = prm.depth > 1 ? prm.vcTimeWeight : 0.0f;
+            vp.seed = prm.seed;
+            vp.stream = prm.stream * 16 + c;
+            voidCluster(vp, planes[c]);
+            continue;
         }
+        for (int z = 0; z < prm.depth; ++z) {
+            float* dst = planes[c] + (size_t)z * n;
+            Rng rng(prm.seed, (prm.stream * 4099ULL + (uint64_t)z) * 16ULL + (uint64_t)c);
+            for (int i = 0; i < n; ++i) dst[i] = (i + 0.5f) / (float)n;
+            for (int i = n - 1; i > 0; --i) std::swap(dst[i], dst[rng.below(i + 1)]);
+        }
+    }
 
     switch (prm.channels) {
         case 1: run<1>(prm, planes); break;
