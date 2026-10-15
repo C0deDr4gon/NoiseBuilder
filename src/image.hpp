@@ -1,13 +1,13 @@
 #pragma once
 #include <cstddef>
-#include <vector>
+#include "simd.hpp"
 
 // Float volume: W x H x D, C channels. D = 1 for 2D.
 // Layout: channel-planar (SoA), each plane x fastest, then y, then z.
-// Planar = good for SIMD later.
+// Planar + 64-byte aligned = good for SIMD. pot sizes >= 4x4 keep every plane aligned.
 struct Image {
     int w = 0, h = 0, d = 1, c = 1;
-    std::vector<float> data;
+    simd::avector<float> data;
 
     Image() = default;
     Image(int w_, int h_, int d_, int c_)

@@ -1,4 +1,5 @@
 #include "cli.hpp"
+#include "simd.hpp"
 #include <cstdio>
 #include <cstdlib>
 
@@ -41,9 +42,9 @@ Cli parseCli(int argc, char** argv) {
 }
 
 void printHelp() {
+    std::printf("noisebuilder - blue noise texture generator (simd: %s, %d wide)\n\n",
+                simd::name(), simd::W);
     std::printf(
-        "noisebuilder - blue noise texture generator\n"
-        "\n"
         "usage:\n"
         "  noisebuilder gen     [options]   make noise texture\n"
         "  noisebuilder analyze <file.tga>  check noise quality\n"

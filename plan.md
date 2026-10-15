@@ -49,11 +49,12 @@ Check box after each step. User check before next step.
 
 ## Step 2 — SIMD layer
 
-- [ ] `simd.hpp`: one type `vf` = 16 / 8 / 4 / 1 floats depending on build
+- [x] `simd.hpp`: one type `vf` = 16 / 8 / 4 / 1 floats depending on build
   - AVX-512 (`__AVX512F__`), AVX2 (`__AVX2__` + FMA), SSE2, scalar
-- [ ] Ops: load, store, add, mul, fma, exp approx, min, reduce sum
-- [ ] Fast `exp` approx (energy kernel = many exp calls, hot path)
-- [ ] Data layout SoA, 64-byte aligned, padded to SIMD width
+- [x] Ops: load, store, add, mul, fma, exp approx, min, reduce sum
+- [x] Fast `exp` approx (energy kernel = many exp calls, hot path)
+- [x] Data layout SoA, 64-byte aligned, padded to SIMD width
+- [x] Note: FMA paths (AVX2/512) vs SSE2/scalar give tiny float diff
 
 ---
 
