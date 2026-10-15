@@ -108,7 +108,7 @@ Higher quality than void-and-cluster. Georgiev & Fajardo 2016 style.
 - [x] Energy per pair: `exp(-|pi-pj|²/σi² - |vi-vj|^(d/2)/σs²)`, vector value for 2/4 ch
 - [x] Swap two pixels, keep if energy down (+ annealing option)
 - [x] Local window only, radius 3·σ (fast). SIMD over window, vector exp.
-- [x] Threads: 2x2-colored blocks (side > window radius), same color in parallel, rng per (round, block) → same result any thread count
+- [x] Threads: 2x2-colored blocks (side > window radius), same color in parallel, grid shifted randomly each round, rng per (round, block) → same result any thread count
 - [x] `--init vc` start from void-and-cluster
 - [x] CLI: `--algo swap --sigma-v --iters --temp --init`
 

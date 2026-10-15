@@ -135,6 +135,7 @@ void run(const SwapParams& prm, float* const* planes) {
 
     // Blocks: pot side B > r, 2x2 colors. Same color blocks are B apart,
     // so their reads (block + r) never touch each other's writes -> safe in parallel.
+    // Grid shifts by random offset each round (wraps, nb even -> colors still valid).
     int B = 16;
     while (B <= r) B *= 2;
     int nb = n / B;
@@ -145,8 +146,13 @@ void run(const SwapParams& prm, float* const* planes) {
     const int swapsPerBlock = B * B;
     const size_t bufLen = 2 * (size_t)C * win.padded;
 
+    const int mask = n - 1;
     for (int rd = 0; rd < rounds; ++rd) {
         float temp = prm.temp * (1.0f - (float)rd / rounds);
+        // Shift block grid each round, else values never cross block edges.
+        Rng gridRng(prm.seed ^ 0xA5A5A5A5ULL, prm.stream * 1000003ULL + (uint64_t)rd);
+        const int ox = nb == 1 ? 0 : (int)gridRng.below(n);
+        const int oy = nb == 1 ? 0 : (int)gridRng.below(n);
         for (int col = 0; col < colors; ++col) {
             // blocks of this color
             std::vector<int> blocks;
@@ -156,14 +162,14 @@ void run(const SwapParams& prm, float* const* planes) {
 
             parallelFor((int)blocks.size(), prm.threads, [&](int i) {
                 int blk = blocks[i];
-                int bx0 = (blk % nb) * B, by0 = (blk / nb) * B;
+                int bx0 = (blk % nb) * B + ox, by0 = (blk / nb) * B + oy;
                 // own rng per (round, block) -> same result for any thread count
                 Rng rng(prm.seed ^ ((uint64_t)rd << 32) ^ (uint64_t)blk * 0x9E3779B97F4A7C15ULL,
                         prm.stream);
                 avector<float> buf(bufLen);
                 for (int s = 0; s < swapsPerBlock; ++s) {
-                    int px = bx0 + (int)rng.below(B), py = by0 + (int)rng.below(B);
-                    int qx = bx0 + (int)rng.below(B), qy = by0 + (int)rng.below(B);
+                    int px = (bx0 + (int)rng.below(B)) & mask, py = (by0 + (int)rng.below(B)) & mask;
+                    int qx = (bx0 + (int)rng.below(B)) & mask, qy = (by0 + (int)rng.below(B)) & mask;
                     float u = rng.uniform();
                     if (px == qx && py == qy) continue;
                     float d = opt.swapDelta(px, py, qx, qy, buf.data());
