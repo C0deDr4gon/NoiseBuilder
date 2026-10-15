@@ -58,5 +58,6 @@ void printHelp() {
         "  --seed     N             rng seed             (default 1)\n"
         "  --sigma    F             energy sigma         (default 1.9)\n"
         "  --threads  N             0 = all cores        (default 0)\n"
-        "  --out      file.tga      output file          (default noise.tga)\n");
+        "  --out      file.tga      output file          (default noise.tga)\n"
+        "  --atlas                  3D: one stacked file, not slices\n");
 }

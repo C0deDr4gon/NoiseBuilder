@@ -71,14 +71,15 @@ Check box after each step. User check before next step.
 
 Classic. Ulichney 1993. Make rank map → value = rank / N.
 
-- [ ] Gaussian energy, toroidal wrap (tile seamless)
-- [ ] Start pattern: random ~10% ones
-- [ ] Phase 1: remove tightest cluster → rank down
-- [ ] Phase 2: add into biggest void → rank up to half
-- [ ] Phase 3: fill rest → rank up to N
-- [ ] Energy map update incremental, SIMD (O(N) per step)
-- [ ] Multi-channel: each channel own seed (simple version)
-- [ ] Param `--sigma` (default 1.9)
+- [x] Gaussian energy, toroidal wrap (tile seamless)
+- [x] Start pattern: random ~10% ones
+- [x] Phase 1: remove tightest cluster → rank down
+- [x] Phase 2: add into biggest void → rank up to half
+- [x] Phase 3: fill rest → rank up to N (same pick as phase 2 with toroidal kernel, merged)
+- [x] Energy map update incremental, SIMD, only rows within kernel radius + per-row min/max cache
+- [x] Multi-channel + 3D slices: each own rng stream, run on threads (`thread_pool.hpp`)
+- [x] `gen --algo vc` wired in main, `--atlas` flag
+- [x] Param `--sigma` (default 1.9)
 
 ---
 
