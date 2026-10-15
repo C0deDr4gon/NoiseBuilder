@@ -87,14 +87,16 @@ Classic. Ulichney 1993. Make rank map → value = rank / N.
 
 Need measure to prove "higher quality". Build before fancy generators.
 
-- [ ] Own radix-2 FFT (pot size = easy). 2D + 3D.
-- [ ] Power spectrum image (log scale) → TGA
-- [ ] Radial average power → CSV
-- [ ] Histogram flat check
-- [ ] Low-freq energy score (lower = more blue)
-- [ ] Channel cross-correlation (for 2/4 ch)
-- [ ] 3D: per slice spatial score + per pixel temporal score
-- [ ] CLI: `noisebuilder analyze in.tga`
+- [x] Own radix-2 FFT (pot size = easy). 2D + 3D.
+- [x] Power spectrum image (log scale) → TGA
+- [x] Radial average power → CSV
+- [x] Histogram flat check
+- [x] Low-freq energy score (lower = more blue)
+- [x] Channel cross-correlation (for 2/4 ch)
+- [x] 3D: per slice spatial score + per pixel temporal score
+- [x] CLI: `noisebuilder analyze in.tga [--depth N] [--atlas] [--out dir]`
+- [x] `gen --report dir` = analyze right after gen (float data, no 8-bit loss)
+- [x] Power normalized: white noise = 1.0 everywhere
 
 ---
 

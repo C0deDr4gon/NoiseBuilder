@@ -1,5 +1,6 @@
 #include <chrono>
 #include <cstdio>
+#include "analyze/analyze.hpp"
 #include "cli.hpp"
 #include "gen/void_cluster.hpp"
 #include "image.hpp"
@@ -52,6 +53,54 @@ static int cmdGen(const Cli& cli) {
     bool ok = atlas ? writeTgaAtlas(out, img, err) : writeTgaSlices(out, img, err);
     if (!ok) return fail(err);
     std::printf("wrote %s%s\n", out.c_str(), depth > 1 && !atlas ? " (slices _000..)" : "");
+
+    if (cli.has("report")) {
+        std::string dir = cli.get("report", "report");
+        if (dir == "1") dir = "report";
+        printReport(analyzeImage(img, dir), img);
+    }
+    return 0;
+}
+
+// Load 2D file, slices (name_000.tga ..) or atlas into one volume.
+static bool loadVolume(const std::string& path, int depth, bool atlas, Image& vol, std::string& err) {
+    if (depth == 1 || atlas) {
+        Image a;
+        if (!readTga(path, a, err)) return false;
+        if (a.h % depth) { err = "atlas height not divisible by --depth"; return false; }
+        int h = a.h / depth;
+        vol = Image(a.w, h, depth, a.c);
+        for (int c = 0; c < a.c; ++c)
+            for (int z = 0; z < depth; ++z)
+                for (int y = 0; y < h; ++y)
+                    for (int x = 0; x < a.w; ++x)
+                        vol.at(x, y, z, c) = a.at(x, z * h + y, 0, c);
+        return true;
+    }
+    for (int z = 0; z < depth; ++z) {
+        Image s;
+        if (!readTga(slicePath(path, z), s, err)) return false;
+        if (z == 0) vol = Image(s.w, s.h, depth, s.c);
+        if (s.w != vol.w || s.h != vol.h || s.c != vol.c) { err = "slice size mismatch"; return false; }
+        for (int c = 0; c < s.c; ++c)
+            for (int y = 0; y < s.h; ++y)
+                for (int x = 0; x < s.w; ++x)
+                    vol.at(x, y, z, c) = s.at(x, y, 0, c);
+    }
+    return true;
+}
+
+static int cmdAnalyze(const Cli& cli) {
+    if (cli.args.empty()) return fail("analyze: need file.tga");
+    int depth = cli.getInt("depth", 1);
+    if (!isPow2(depth)) return fail("--depth must be power of two");
+    std::string dir = cli.get("out", "report");
+
+    Image vol;
+    std::string err;
+    if (!loadVolume(cli.args[0], depth, cli.has("atlas"), vol, err)) return fail(err);
+    printReport(analyzeImage(vol, dir), vol);
+    std::printf("report files in %s/\n", dir.c_str());
     return 0;
 }
 
@@ -64,8 +113,7 @@ int main(int argc, char** argv) {
     }
 
     if (cli.command == "help") { printHelp(); return 0; }
-    if (cli.command == "gen")  return cmdGen(cli);
-
-    // analyze comes in step 5
-    return fail("unknown or not yet built command: " + cli.command);
+    if (cli.command == "gen")     return cmdGen(cli);
+    if (cli.command == "analyze") return cmdAnalyze(cli);
+    return fail("unknown command: " + cli.command);
 }

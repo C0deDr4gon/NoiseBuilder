@@ -59,5 +59,12 @@ void printHelp() {
         "  --sigma    F             energy sigma         (default 1.9)\n"
         "  --threads  N             0 = all cores        (default 0)\n"
         "  --out      file.tga      output file          (default noise.tga)\n"
-        "  --atlas                  3D: one stacked file, not slices\n");
+        "  --atlas                  3D: one stacked file, not slices\n"
+        "  --report   dir           also run analyze, files to dir\n"
+        "\n"
+        "analyze options:\n"
+        "  --depth    N             3D: slice count      (default 1)\n"
+        "  --atlas                  3D: input is one stacked file\n"
+        "  --out      dir           report dir           (default report)\n"
+        "  writes chN_spectrum.tga, chN_radial.csv, chN_temporal.csv (3D)\n");
 }
