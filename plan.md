@@ -213,9 +213,20 @@ noisebuilder version
 
 ---
 
+## Step 12 — libtex
+
+Needs libtex native build first (libtex PLAN.md: SSE4.1 + scalar vec.h, gcc / clang / MSVC platform.h).
+
+- [ ] ext/libtex git submodule (github.com/C0deDr4gon/libtex). One C unit `src/io/libtex.c` (LIBTEX_IMPLEMENTATION), build.sh / build.bat compile it as C.
+- [ ] readTga via tex_tga_info / tex_tga_read (all TGA types, RLE, any origin). Keep 2 ch rule (24 bit, B all zero).
+- [ ] writeTga via libtex tga writer. Keep own quantize floor(v * 256) (libtex rounds v * 255 -> breaks equal byte counts): libtex needs bytes in writer (tex_tga_pixels from bytes) -> add step in libtex.
+- [ ] Tests: tga roundtrip same as now.
+
+---
+
 ## Rules
 
 - No build, no test, no run until user say.
 - One step at a time. User check. Then next.
 - Here: only small sizes (32x32). Big on user PC.
-- No dependencies. Keep code small.
+- No dependencies, except libtex submodule (own lib). Keep code small.
