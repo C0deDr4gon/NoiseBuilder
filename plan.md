@@ -118,12 +118,14 @@ Higher quality than void-and-cluster. Georgiev & Fajardo 2016 style.
 
 Wolfe et al. 2022. Big win for raytrace + TAA.
 
-- [ ] Volume W x H x T (T pot too)
-- [ ] Each slice = blue noise in space
-- [ ] Each pixel over time = blue noise in 1D
-- [ ] Separate sigma space / time
-- [ ] Wrap all 3 axes
-- [ ] Scalar first, then 2 / 4 channel
+- [x] Volume W x H x T (T pot too)
+- [x] Each slice = blue noise in space
+- [x] Each pixel over time = blue noise in 1D
+- [x] Separate sigma space / time
+- [x] Wrap all 3 axes
+- [x] 1 / 2 / 4 channel (vector value, same as swap)
+- [x] Built on swap optimizer: swaps stay in one slice (per-slice histogram perfect), energy = spatial pairs in slice + temporal pairs same pixel
+- [x] CLI: `--algo stbn --depth N --sigma-t --time-weight`
 
 ---
 
