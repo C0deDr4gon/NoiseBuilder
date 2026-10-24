@@ -225,6 +225,13 @@ Needs libtex native build first (libtex PLAN.md: SSE4.1 + scalar vec.h, gcc / cl
 
 ---
 
+## Step 13 — libtex leftovers
+
+- [ ] Bytes via libtex: analyze histogram uses tex_to_bytes; drop toByte / fromByte from image.hpp (tests use tex_from_bytes). rankValue doc points at libtex rounding.
+- [ ] Channel count from libtex: waits for libtex tex_info channels (1 gray, 3, 4; color map = palette channels). Then copy libtex again, readTga uses info.channels, no header peek (file[2] / file[16]). Keep 2 ch rule (24 bit, B all zero).
+
+---
+
 ## Rules
 
 - No build, no test, no run until user say.
